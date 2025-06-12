@@ -1,4 +1,3 @@
-
 import { jsPDF } from 'jspdf';
 import { Recipe } from '../data/recipes';
 import { supportedLanguages } from './translation';
@@ -33,6 +32,7 @@ const downloadAsTxt = (recipe: Recipe, languageName: string) => {
 const downloadAsPdf = (recipe: Recipe, languageName: string) => {
   const pdf = new jsPDF();
   const pageWidth = pdf.internal.pageSize.width;
+  const pageHeight = pdf.internal.pageSize.height;
   const margin = 20;
   let yPosition = margin;
 
@@ -50,49 +50,129 @@ const downloadAsPdf = (recipe: Recipe, languageName: string) => {
     yPosition += lines.length * (fontSize * 0.5) + 5;
     
     // Check if we need a new page
-    if (yPosition > pdf.internal.pageSize.height - margin) {
+    if (yPosition > pageHeight - margin - 30) { // Leave space for footer
+      addFooter();
       pdf.addPage();
-      yPosition = margin;
+      yPosition = margin + 20; // Space for header on new page
+      addHeader();
     }
   };
 
-  // Title
-  addText(recipe.title, 20, true);
-  yPosition += 5;
+  // Header function
+  const addHeader = () => {
+    const headerY = 15;
+    pdf.setFontSize(10);
+    pdf.setFont(undefined, 'normal');
+    pdf.setTextColor(100, 100, 100);
+    pdf.text('RecipeWorld - Your Global Recipe Collection', pageWidth / 2, headerY, { align: 'center' });
+    
+    // Add a line under header
+    pdf.setDrawColor(200, 200, 200);
+    pdf.line(margin, headerY + 5, pageWidth - margin, headerY + 5);
+    yPosition = headerY + 15;
+  };
+
+  // Footer function
+  const addFooter = () => {
+    const footerY = pageHeight - 15;
+    pdf.setFontSize(8);
+    pdf.setFont(undefined, 'normal');
+    pdf.setTextColor(100, 100, 100);
+    
+    // Add line above footer
+    pdf.setDrawColor(200, 200, 200);
+    pdf.line(margin, footerY - 10, pageWidth - margin, footerY - 10);
+    
+    // Footer content
+    pdf.text('www.recipeworld.com | contact@recipeworld.com', margin, footerY);
+    pdf.text(`Page ${pdf.getCurrentPageInfo().pageNumber}`, pageWidth - margin, footerY, { align: 'right' });
+    pdf.text(`Generated on ${new Date().toLocaleDateString()} | Language: ${languageName}`, pageWidth / 2, footerY, { align: 'center' });
+  };
+
+  // Add header
+  addHeader();
+  
+  // Website logo/title
+  pdf.setFontSize(16);
+  pdf.setFont(undefined, 'bold');
+  pdf.setTextColor(255, 130, 0); // Orange color
+  pdf.text('🍳 RecipeWorld', pageWidth / 2, yPosition, { align: 'center' });
+  yPosition += 15;
+
+  // Recipe title with styling
+  pdf.setFontSize(24);
+  pdf.setFont(undefined, 'bold');
+  pdf.setTextColor(0, 0, 0);
+  const titleLines = pdf.splitTextToSize(recipe.title, pageWidth - 2 * margin);
+  pdf.text(titleLines, pageWidth / 2, yPosition, { align: 'center' });
+  yPosition += titleLines.length * 12 + 10;
+
+  // Add decorative line
+  pdf.setDrawColor(255, 165, 0);
+  pdf.setLineWidth(2);
+  pdf.line(pageWidth / 2 - 30, yPosition, pageWidth / 2 + 30, yPosition);
+  yPosition += 15;
 
   // Description
+  pdf.setTextColor(80, 80, 80);
   addText(recipe.description, 12);
   yPosition += 5;
 
-  // Recipe Info
-  addText(`Cuisine: ${recipe.cuisine} | Category: ${recipe.category} | Prep Time: ${recipe.prepTime} | Cook Time: ${recipe.cookTime} | Servings: ${recipe.servings} | Difficulty: ${recipe.difficulty}`, 10);
-  yPosition += 10;
-
-  // Ingredients
-  addText('Ingredients:', 16, true);
-  yPosition += 2;
+  // Recipe Info in a styled box
+  const infoBoxY = yPosition;
+  const infoBoxHeight = 25;
   
+  // Draw info box background
+  pdf.setFillColor(250, 245, 235);
+  pdf.rect(margin, infoBoxY, pageWidth - 2 * margin, infoBoxHeight, 'F');
+  
+  // Add info text
+  pdf.setFontSize(10);
+  pdf.setTextColor(60, 60, 60);
+  const infoText = `🍽️ Cuisine: ${recipe.cuisine} | 📂 Category: ${recipe.category} | ⏱️ Prep: ${recipe.prepTime} | 🔥 Cook: ${recipe.cookTime} | 👥 Serves: ${recipe.servings} | 📊 Difficulty: ${recipe.difficulty}`;
+  const infoLines = pdf.splitTextToSize(infoText, pageWidth - 2 * margin - 10);
+  pdf.text(infoLines, margin + 5, infoBoxY + 8);
+  
+  yPosition = infoBoxY + infoBoxHeight + 15;
+
+  // Ingredients section
+  pdf.setFontSize(18);
+  pdf.setFont(undefined, 'bold');
+  pdf.setTextColor(255, 130, 0);
+  pdf.text('🥘 Ingredients', margin, yPosition);
+  yPosition += 10;
+  
+  pdf.setTextColor(0, 0, 0);
   recipe.ingredients.forEach((ingredient, index) => {
     addText(`${index + 1}. ${ingredient}`, 11);
   });
   yPosition += 10;
 
-  // Instructions
-  addText('Instructions:', 16, true);
-  yPosition += 2;
+  // Instructions section
+  pdf.setFontSize(18);
+  pdf.setFont(undefined, 'bold');
+  pdf.setTextColor(255, 130, 0);
+  pdf.text('👨‍🍳 Instructions', margin, yPosition);
+  yPosition += 10;
   
+  pdf.setTextColor(0, 0, 0);
   recipe.instructions.forEach((instruction, index) => {
-    addText(`${index + 1}. ${instruction}`, 11);
+    const stepHeader = `Step ${index + 1}:`;
+    pdf.setFont(undefined, 'bold');
+    addText(stepHeader, 12, true);
+    yPosition -= 5; // Reduce space after step header
+    
+    pdf.setFont(undefined, 'normal');
+    addText(instruction, 11);
     yPosition += 3;
   });
 
-  // Footer
-  yPosition += 10;
-  addText(`Recipe translated to ${languageName}`, 8);
-  addText(`Generated on ${new Date().toLocaleDateString()}`, 8);
+  // Add footer to last page
+  addFooter();
 
   // Download
-  pdf.save(`${recipe.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_${languageName.toLowerCase()}.pdf`);
+  const fileName = `${recipe.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_${languageName.toLowerCase()}.pdf`;
+  pdf.save(fileName);
 };
 
 const formatRecipeForText = (recipe: Recipe, languageName: string): string => {

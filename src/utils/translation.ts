@@ -1,4 +1,3 @@
-
 import { Recipe } from '../data/recipes';
 
 export interface TranslationLanguage {
@@ -24,32 +23,21 @@ export const supportedLanguages: TranslationLanguage[] = [
   { code: 'ru', name: 'Russian', flag: '🇷🇺' }
 ];
 
-// LibreTranslate API endpoint (you can use their public instance or set up your own)
-const LIBRE_TRANSLATE_API = 'https://libretranslate.de/translate';
+// Use MyMemory Translation API which is faster and more reliable than LibreTranslate
+const MYMEMORY_API = 'https://api.mymemory.translated.net/get';
 
 export const translateText = async (text: string, targetLanguage: string): Promise<string> => {
   if (targetLanguage === 'en') return text;
   
   try {
-    const response = await fetch(LIBRE_TRANSLATE_API, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        q: text,
-        source: 'en',
-        target: targetLanguage,
-        format: 'text'
-      })
-    });
-
+    const response = await fetch(`${MYMEMORY_API}?q=${encodeURIComponent(text)}&langpair=en|${targetLanguage}`);
+    
     if (!response.ok) {
       throw new Error(`Translation failed: ${response.statusText}`);
     }
 
     const data = await response.json();
-    return data.translatedText || text;
+    return data.responseData?.translatedText || text;
   } catch (error) {
     console.error('Translation error:', error);
     // Fallback to original text if translation fails
