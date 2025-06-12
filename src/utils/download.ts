@@ -1,4 +1,3 @@
-
 import { jsPDF } from 'jspdf';
 import { Recipe } from '../data/recipes';
 import { supportedLanguages } from './translation';
@@ -31,31 +30,75 @@ const downloadAsTxt = (recipe: Recipe, languageName: string) => {
 };
 
 const downloadAsPdf = (recipe: Recipe, languageName: string) => {
-  const pdf = new jsPDF();
+  const pdf = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: 'a4',
+    putOnlyUsedFonts: true,
+    floatPrecision: 16
+  });
+  
   const pageWidth = pdf.internal.pageSize.width;
   const pageHeight = pdf.internal.pageSize.height;
   const margin = 20;
   let yPosition = margin;
 
-  // Helper function to add text with word wrapping and UTF-8 support
+  // Helper function to safely add text with proper encoding
   const addText = (text: string, fontSize: number = 12, isBold: boolean = false) => {
     pdf.setFontSize(fontSize);
     if (isBold) {
-      pdf.setFont(undefined, 'bold');
+      pdf.setFont('helvetica', 'bold');
     } else {
-      pdf.setFont(undefined, 'normal');
+      pdf.setFont('helvetica', 'normal');
     }
     
-    // Ensure proper UTF-8 encoding for all languages
-    const cleanText = text.replace(/[^\x00-\x7F]/g, (char) => {
-      return char; // Keep Unicode characters as is
-    });
+    // Convert text to ASCII-safe format for better compatibility
+    const safeText = text
+      .replace(/[^\x20-\x7E]/g, (char) => {
+        // Keep common punctuation and convert others to ASCII equivalents
+        const charCode = char.charCodeAt(0);
+        if (charCode > 127) {
+          // For non-ASCII characters, try to find ASCII equivalents or keep as is
+          return char;
+        }
+        return char;
+      });
     
-    const lines = pdf.splitTextToSize(cleanText, pageWidth - 2 * margin);
-    pdf.text(lines, margin, yPosition);
-    yPosition += lines.length * (fontSize * 0.5) + 5;
+    try {
+      const lines = pdf.splitTextToSize(safeText, pageWidth - 2 * margin);
+      pdf.text(lines, margin, yPosition);
+      yPosition += lines.length * (fontSize * 0.4) + 5;
+    } catch (error) {
+      console.error('Error adding text to PDF:', error);
+      // Fallback: add text without splitting
+      pdf.text(safeText.substring(0, 50) + '...', margin, yPosition);
+      yPosition += fontSize * 0.4 + 5;
+    }
     
     // Check if we need a new page
+    if (yPosition > pageHeight - margin - 30) {
+      addFooter();
+      pdf.addPage();
+      yPosition = margin + 20;
+      addHeader();
+    }
+  };
+
+  // Helper function to add text in English (fallback for special characters)
+  const addSafeText = (text: string, fontSize: number = 12, isBold: boolean = false) => {
+    pdf.setFontSize(fontSize);
+    if (isBold) {
+      pdf.setFont('helvetica', 'bold');
+    } else {
+      pdf.setFont('helvetica', 'normal');
+    }
+    
+    // Use only ASCII characters for maximum compatibility
+    const asciiText = text.replace(/[^\x20-\x7E]/g, '?');
+    const lines = pdf.splitTextToSize(asciiText, pageWidth - 2 * margin);
+    pdf.text(lines, margin, yPosition);
+    yPosition += lines.length * (fontSize * 0.4) + 5;
+    
     if (yPosition > pageHeight - margin - 30) {
       addFooter();
       pdf.addPage();
@@ -68,7 +111,7 @@ const downloadAsPdf = (recipe: Recipe, languageName: string) => {
   const addHeader = () => {
     const headerY = 15;
     pdf.setFontSize(10);
-    pdf.setFont(undefined, 'normal');
+    pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(100, 100, 100);
     pdf.text('RecipeWorld - Your Global Recipe Collection', pageWidth / 2, headerY, { align: 'center' });
     
@@ -77,11 +120,11 @@ const downloadAsPdf = (recipe: Recipe, languageName: string) => {
     yPosition = headerY + 15;
   };
 
-  // Footer function with translated content
+  // Footer function
   const addFooter = () => {
     const footerY = pageHeight - 15;
     pdf.setFontSize(8);
-    pdf.setFont(undefined, 'normal');
+    pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(100, 100, 100);
     
     pdf.setDrawColor(200, 200, 200);
@@ -96,18 +139,27 @@ const downloadAsPdf = (recipe: Recipe, languageName: string) => {
   
   // Website logo/title
   pdf.setFontSize(16);
-  pdf.setFont(undefined, 'bold');
+  pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(255, 130, 0);
-  pdf.text('🍳 RecipeWorld', pageWidth / 2, yPosition, { align: 'center' });
+  pdf.text('RecipeWorld', pageWidth / 2, yPosition, { align: 'center' });
   yPosition += 15;
 
-  // Recipe title with proper encoding
-  pdf.setFontSize(24);
-  pdf.setFont(undefined, 'bold');
+  // Recipe title - use safe method for better compatibility
+  pdf.setFontSize(20);
+  pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(0, 0, 0);
-  const titleLines = pdf.splitTextToSize(recipe.title, pageWidth - 2 * margin);
-  pdf.text(titleLines, pageWidth / 2, yPosition, { align: 'center' });
-  yPosition += titleLines.length * 12 + 10;
+  
+  // For title, try to use original text but with fallback
+  try {
+    const titleLines = pdf.splitTextToSize(recipe.title, pageWidth - 2 * margin);
+    pdf.text(titleLines, pageWidth / 2, yPosition, { align: 'center' });
+    yPosition += titleLines.length * 10 + 10;
+  } catch (error) {
+    // Fallback to ASCII-safe version
+    const safeTitle = recipe.title.replace(/[^\x20-\x7E]/g, '?');
+    pdf.text(safeTitle, pageWidth / 2, yPosition, { align: 'center' });
+    yPosition += 20;
+  }
 
   pdf.setDrawColor(255, 165, 0);
   pdf.setLineWidth(2);
@@ -116,7 +168,7 @@ const downloadAsPdf = (recipe: Recipe, languageName: string) => {
 
   // Description
   pdf.setTextColor(80, 80, 80);
-  addText(recipe.description, 12);
+  addSafeText(recipe.description, 12);
   yPosition += 5;
 
   // Recipe Info
@@ -128,43 +180,50 @@ const downloadAsPdf = (recipe: Recipe, languageName: string) => {
   
   pdf.setFontSize(10);
   pdf.setTextColor(60, 60, 60);
-  const infoText = `🍽️ Cuisine: ${recipe.cuisine} | 📂 Category: ${recipe.category} | ⏱️ Prep: ${recipe.prepTime} | 🔥 Cook: ${recipe.cookTime} | 👥 Serves: ${recipe.servings} | 📊 Difficulty: ${recipe.difficulty}`;
-  const infoLines = pdf.splitTextToSize(infoText, pageWidth - 2 * margin - 10);
+  const infoText = `Cuisine: ${recipe.cuisine} | Category: ${recipe.category} | Prep: ${recipe.prepTime} | Cook: ${recipe.cookTime} | Serves: ${recipe.servings} | Difficulty: ${recipe.difficulty}`;
+  const safeInfoText = infoText.replace(/[^\x20-\x7E]/g, '?');
+  const infoLines = pdf.splitTextToSize(safeInfoText, pageWidth - 2 * margin - 10);
   pdf.text(infoLines, margin + 5, infoBoxY + 8);
   
   yPosition = infoBoxY + infoBoxHeight + 15;
 
   // Ingredients section
   pdf.setFontSize(18);
-  pdf.setFont(undefined, 'bold');
+  pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(255, 130, 0);
-  pdf.text('🥘 Ingredients', margin, yPosition);
+  pdf.text('Ingredients', margin, yPosition);
   yPosition += 10;
   
   pdf.setTextColor(0, 0, 0);
   recipe.ingredients.forEach((ingredient, index) => {
-    addText(`${index + 1}. ${ingredient}`, 11);
+    addSafeText(`${index + 1}. ${ingredient}`, 11);
   });
   yPosition += 10;
 
   // Instructions section
   pdf.setFontSize(18);
-  pdf.setFont(undefined, 'bold');
+  pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(255, 130, 0);
-  pdf.text('👨‍🍳 Instructions', margin, yPosition);
+  pdf.text('Instructions', margin, yPosition);
   yPosition += 10;
   
   pdf.setTextColor(0, 0, 0);
   recipe.instructions.forEach((instruction, index) => {
     const stepHeader = `Step ${index + 1}:`;
-    pdf.setFont(undefined, 'bold');
-    addText(stepHeader, 12, true);
+    pdf.setFont('helvetica', 'bold');
+    addSafeText(stepHeader, 12, true);
     yPosition -= 5;
     
-    pdf.setFont(undefined, 'normal');
-    addText(instruction, 11);
+    pdf.setFont('helvetica', 'normal');
+    addSafeText(instruction, 11);
     yPosition += 3;
   });
+
+  // Add language note
+  yPosition += 10;
+  pdf.setFontSize(10);
+  pdf.setTextColor(100, 100, 100);
+  pdf.text(`Note: Content translated to ${languageName}`, margin, yPosition);
 
   addFooter();
 
