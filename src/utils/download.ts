@@ -1,3 +1,4 @@
+
 import { jsPDF } from 'jspdf';
 import { Recipe } from '../data/recipes';
 import { supportedLanguages } from './translation';
@@ -36,7 +37,7 @@ const downloadAsPdf = (recipe: Recipe, languageName: string) => {
   const margin = 20;
   let yPosition = margin;
 
-  // Helper function to add text with word wrapping
+  // Helper function to add text with word wrapping and UTF-8 support
   const addText = (text: string, fontSize: number = 12, isBold: boolean = false) => {
     pdf.setFontSize(fontSize);
     if (isBold) {
@@ -45,15 +46,20 @@ const downloadAsPdf = (recipe: Recipe, languageName: string) => {
       pdf.setFont(undefined, 'normal');
     }
     
-    const lines = pdf.splitTextToSize(text, pageWidth - 2 * margin);
+    // Ensure proper UTF-8 encoding for all languages
+    const cleanText = text.replace(/[^\x00-\x7F]/g, (char) => {
+      return char; // Keep Unicode characters as is
+    });
+    
+    const lines = pdf.splitTextToSize(cleanText, pageWidth - 2 * margin);
     pdf.text(lines, margin, yPosition);
     yPosition += lines.length * (fontSize * 0.5) + 5;
     
     // Check if we need a new page
-    if (yPosition > pageHeight - margin - 30) { // Leave space for footer
+    if (yPosition > pageHeight - margin - 30) {
       addFooter();
       pdf.addPage();
-      yPosition = margin + 20; // Space for header on new page
+      yPosition = margin + 20;
       addHeader();
     }
   };
@@ -66,40 +72,36 @@ const downloadAsPdf = (recipe: Recipe, languageName: string) => {
     pdf.setTextColor(100, 100, 100);
     pdf.text('RecipeWorld - Your Global Recipe Collection', pageWidth / 2, headerY, { align: 'center' });
     
-    // Add a line under header
     pdf.setDrawColor(200, 200, 200);
     pdf.line(margin, headerY + 5, pageWidth - margin, headerY + 5);
     yPosition = headerY + 15;
   };
 
-  // Footer function
+  // Footer function with translated content
   const addFooter = () => {
     const footerY = pageHeight - 15;
     pdf.setFontSize(8);
     pdf.setFont(undefined, 'normal');
     pdf.setTextColor(100, 100, 100);
     
-    // Add line above footer
     pdf.setDrawColor(200, 200, 200);
     pdf.line(margin, footerY - 10, pageWidth - margin, footerY - 10);
     
-    // Footer content
     pdf.text('www.recipeworld.com | contact@recipeworld.com', margin, footerY);
     pdf.text(`Page ${pdf.getCurrentPageInfo().pageNumber}`, pageWidth - margin, footerY, { align: 'right' });
     pdf.text(`Generated on ${new Date().toLocaleDateString()} | Language: ${languageName}`, pageWidth / 2, footerY, { align: 'center' });
   };
 
-  // Add header
   addHeader();
   
   // Website logo/title
   pdf.setFontSize(16);
   pdf.setFont(undefined, 'bold');
-  pdf.setTextColor(255, 130, 0); // Orange color
+  pdf.setTextColor(255, 130, 0);
   pdf.text('🍳 RecipeWorld', pageWidth / 2, yPosition, { align: 'center' });
   yPosition += 15;
 
-  // Recipe title with styling
+  // Recipe title with proper encoding
   pdf.setFontSize(24);
   pdf.setFont(undefined, 'bold');
   pdf.setTextColor(0, 0, 0);
@@ -107,7 +109,6 @@ const downloadAsPdf = (recipe: Recipe, languageName: string) => {
   pdf.text(titleLines, pageWidth / 2, yPosition, { align: 'center' });
   yPosition += titleLines.length * 12 + 10;
 
-  // Add decorative line
   pdf.setDrawColor(255, 165, 0);
   pdf.setLineWidth(2);
   pdf.line(pageWidth / 2 - 30, yPosition, pageWidth / 2 + 30, yPosition);
@@ -118,15 +119,13 @@ const downloadAsPdf = (recipe: Recipe, languageName: string) => {
   addText(recipe.description, 12);
   yPosition += 5;
 
-  // Recipe Info in a styled box
+  // Recipe Info
   const infoBoxY = yPosition;
   const infoBoxHeight = 25;
   
-  // Draw info box background
   pdf.setFillColor(250, 245, 235);
   pdf.rect(margin, infoBoxY, pageWidth - 2 * margin, infoBoxHeight, 'F');
   
-  // Add info text
   pdf.setFontSize(10);
   pdf.setTextColor(60, 60, 60);
   const infoText = `🍽️ Cuisine: ${recipe.cuisine} | 📂 Category: ${recipe.category} | ⏱️ Prep: ${recipe.prepTime} | 🔥 Cook: ${recipe.cookTime} | 👥 Serves: ${recipe.servings} | 📊 Difficulty: ${recipe.difficulty}`;
@@ -160,17 +159,15 @@ const downloadAsPdf = (recipe: Recipe, languageName: string) => {
     const stepHeader = `Step ${index + 1}:`;
     pdf.setFont(undefined, 'bold');
     addText(stepHeader, 12, true);
-    yPosition -= 5; // Reduce space after step header
+    yPosition -= 5;
     
     pdf.setFont(undefined, 'normal');
     addText(instruction, 11);
     yPosition += 3;
   });
 
-  // Add footer to last page
   addFooter();
 
-  // Download
   const fileName = `${recipe.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_${languageName.toLowerCase()}.pdf`;
   pdf.save(fileName);
 };

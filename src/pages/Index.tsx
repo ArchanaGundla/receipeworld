@@ -70,15 +70,15 @@ const Index = () => {
             
             {/* Features */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto mb-12">
-              <div className="flex items-center justify-center space-x-3 bg-white rounded-lg p-4 shadow-md">
+              <div key="authentic" className="flex items-center justify-center space-x-3 bg-white rounded-lg p-4 shadow-md">
                 <ChefHat className="w-8 h-8 text-orange-500" />
                 <span className="font-semibold text-gray-700">Authentic Recipes</span>
               </div>
-              <div className="flex items-center justify-center space-x-3 bg-white rounded-lg p-4 shadow-md">
+              <div key="languages" className="flex items-center justify-center space-x-3 bg-white rounded-lg p-4 shadow-md">
                 <Globe className="w-8 h-8 text-orange-500" />
                 <span className="font-semibold text-gray-700">14+ Languages</span>
               </div>
-              <div className="flex items-center justify-center space-x-3 bg-white rounded-lg p-4 shadow-md">
+              <div key="downloads" className="flex items-center justify-center space-x-3 bg-white rounded-lg p-4 shadow-md">
                 <Download className="w-8 h-8 text-orange-500" />
                 <span className="font-semibold text-gray-700">PDF Downloads</span>
               </div>
