@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Recipe } from '../data/recipes';
 import { Clock, Users, ChefHat } from 'lucide-react';
@@ -38,6 +37,11 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ recipe }) => {
               {recipe.difficulty}
             </span>
           </div>
+          <div className="absolute top-3 left-3">
+            <span className="px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+              {recipe.category}
+            </span>
+          </div>
         </div>
 
         {/* Recipe Content */}
@@ -61,7 +65,7 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ recipe }) => {
             </div>
             <div className="flex items-center space-x-1">
               <ChefHat className="w-4 h-4" />
-              <span>{recipe.cuisine}</span>
+              <span className="truncate max-w-20">{recipe.area}</span>
             </div>
           </div>
 

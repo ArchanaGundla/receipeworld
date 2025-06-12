@@ -1,8 +1,8 @@
 
 import React, { useState } from 'react';
 import { Recipe } from '../data/recipes';
-import { X, Clock, Users, ChefHat, Download, Languages } from 'lucide-react';
-import { translateText } from '../utils/translation';
+import { X, Clock, Users, ChefHat, Download, Languages, Loader2 } from 'lucide-react';
+import { translateRecipe, supportedLanguages } from '../utils/translation';
 import { downloadRecipe } from '../utils/download';
 import { toast } from 'sonner';
 
@@ -11,19 +11,6 @@ interface RecipeModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
-
-const languages = [
-  { code: 'en', name: 'English' },
-  { code: 'hi', name: 'Hindi' },
-  { code: 'ta', name: 'Tamil' },
-  { code: 'fr', name: 'French' },
-  { code: 'es', name: 'Spanish' },
-  { code: 'de', name: 'German' },
-  { code: 'it', name: 'Italian' },
-  { code: 'ja', name: 'Japanese' },
-  { code: 'ko', name: 'Korean' },
-  { code: 'zh', name: 'Chinese' }
-];
 
 const RecipeModal: React.FC<RecipeModalProps> = ({ recipe, isOpen, onClose }) => {
   const [selectedLanguage, setSelectedLanguage] = useState('en');
@@ -46,10 +33,12 @@ const RecipeModal: React.FC<RecipeModalProps> = ({ recipe, isOpen, onClose }) =>
     console.log(`Translating recipe to ${languageCode}`);
 
     try {
-      const translated = await translateText(recipe, languageCode);
+      const translated = await translateRecipe(recipe, languageCode);
       setTranslatedRecipe(translated);
       setSelectedLanguage(languageCode);
-      toast.success(`Recipe translated to ${languages.find(l => l.code === languageCode)?.name}`);
+      
+      const language = supportedLanguages.find(l => l.code === languageCode);
+      toast.success(`Recipe translated to ${language?.name || languageCode}`);
     } catch (error) {
       console.error('Translation failed:', error);
       toast.error('Translation failed. Please try again.');
@@ -60,10 +49,9 @@ const RecipeModal: React.FC<RecipeModalProps> = ({ recipe, isOpen, onClose }) =>
 
   const handleDownload = async (format: 'txt' | 'pdf') => {
     setIsDownloading(true);
-    const languageName = languages.find(l => l.code === selectedLanguage)?.name || 'English';
     
     try {
-      await downloadRecipe(currentRecipe, format, languageName);
+      await downloadRecipe(currentRecipe, format, selectedLanguage);
       toast.success(`Recipe downloaded as ${format.toUpperCase()}`);
     } catch (error) {
       console.error('Download failed:', error);
@@ -106,16 +94,19 @@ const RecipeModal: React.FC<RecipeModalProps> = ({ recipe, isOpen, onClose }) =>
                 value={selectedLanguage}
                 onChange={(e) => handleTranslate(e.target.value)}
                 disabled={isTranslating}
-                className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-200 focus:border-orange-400 outline-none"
+                className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-200 focus:border-orange-400 outline-none min-w-[140px]"
               >
-                {languages.map((lang) => (
+                {supportedLanguages.map((lang) => (
                   <option key={lang.code} value={lang.code}>
-                    {lang.name}
+                    {lang.flag} {lang.name}
                   </option>
                 ))}
               </select>
               {isTranslating && (
-                <span className="text-sm text-gray-500">Translating...</span>
+                <div className="flex items-center space-x-2 text-sm text-gray-500">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Translating...</span>
+                </div>
               )}
             </div>
 
@@ -123,19 +114,20 @@ const RecipeModal: React.FC<RecipeModalProps> = ({ recipe, isOpen, onClose }) =>
             <div className="flex space-x-2">
               <button
                 onClick={() => handleDownload('txt')}
-                disabled={isDownloading}
-                className="flex items-center space-x-2 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50"
+                disabled={isDownloading || isTranslating}
+                className="flex items-center space-x-2 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Download className="w-4 h-4" />
                 <span>Download TXT</span>
               </button>
               <button
                 onClick={() => handleDownload('pdf')}
-                disabled={isDownloading}
-                className="flex items-center space-x-2 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50"
+                disabled={isDownloading || isTranslating}
+                className="flex items-center space-x-2 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Download className="w-4 h-4" />
                 <span>Download PDF</span>
+                {isDownloading && <Loader2 className="w-4 h-4 animate-spin" />}
               </button>
             </div>
           </div>
