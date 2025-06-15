@@ -1,10 +1,10 @@
-
 import React, { useState } from 'react';
 import { Recipe } from '../data/recipes';
 import { X, Clock, Users, ChefHat, Download, Languages, Loader2 } from 'lucide-react';
 import { translateRecipe, supportedLanguages } from '../utils/translation';
 import { downloadRecipe } from '../utils/download';
 import { toast } from 'sonner';
+import SocialShare from './SocialShare';
 
 interface RecipeModalProps {
   recipe: Recipe;
@@ -130,6 +130,11 @@ const RecipeModal: React.FC<RecipeModalProps> = ({ recipe, isOpen, onClose }) =>
                 {isDownloading && <Loader2 className="w-4 h-4 animate-spin" />}
               </button>
             </div>
+          </div>
+
+          {/* Social Share Component */}
+          <div className="mb-6 p-4 bg-gray-50 rounded-xl">
+            <SocialShare recipe={currentRecipe} />
           </div>
 
           {/* Recipe Info */}
