@@ -1,4 +1,4 @@
-# 🍽️ YumSearch
+# 🍽️ ReceipeWorld
 
 A fast, clean recipe search and discovery app powered by the [MealDB API](https://www.themealdb.com/api.php). Search thousands of recipes by name, browse by category, and find your next favourite meal — all in a modern, responsive UI.
 
