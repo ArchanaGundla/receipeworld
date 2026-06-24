@@ -2,7 +2,7 @@
 
 A fast, clean recipe search and discovery app powered by the [MealDB API](https://www.themealdb.com/api.php). Search thousands of recipes by name, browse by category, and find your next favourite meal — all in a modern, responsive UI.
 
-🔗 **Live Demo:** [yumsearch.vercel.app](https://yumsearch.vercel.app/)
+🔗 **Live Demo:** [receipeworld.vercel.app](https://receipeworld.vercel.app/)
 
 ---
 
@@ -10,7 +10,7 @@ A fast, clean recipe search and discovery app powered by the [MealDB API](https:
 
 | | |
 |---|---|
-| **Live URL** | https://yumsearch.vercel.app/ |
+| **Live URL** | https://receipeworld.vercel.app/ |
 | **Built by** | Archana Gundla |
 
 ---
@@ -105,6 +105,7 @@ This project is deployed on **Vercel**. To deploy your own copy:
 
 **Archana Gundla**
 - 🔗 LinkedIn: [linkedin.com/in/archana-gundla-365196243](https://www.linkedin.com/in/archana-gundla-365196243)
+- 💻 GitHub: [github.com/YOUR_USERNAME](https://github.com/ArchanaGundla)
 
 ---
 
